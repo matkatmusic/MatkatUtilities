@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="QKMIaC" name="BackgroundMultiuserLogger" projectType="consoleapp"
+              useAppConfig="0" addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1"
+              cppLanguageStandard="20" bundleIdentifier="com.matkatmusic.BackgroundMultiuserLogger"
+              companyWebsite="www.pfmcpp.com" companyCopyright="2025 MatkatMusic LLC"
+              companyName="MatkatMusic LLC" headerPath="../../../../SimpleMultiBandComp/Source/DSP/&#10;../../../../Utilities/&#10;../../../../Utilities/SystemTrayIcon/">
+  <MAINGROUP id="LPmp8I" name="BackgroundMultiuserLogger">
+    <GROUP id="{A8B60E1E-A1FF-F7C9-EB60-A60398932102}" name="Source">
+      <FILE id="apa4x7" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+    </GROUP>
+    <GROUP id="{1CABF392-F8CD-8217-6003-0AF08D5954E0}" name="Utilities">
+      <GROUP id="{4340DB53-AA30-5D1D-3E68-367487EBA8AE}" name="SystemTrayIcon">
+        <FILE id="ptHJLU" name="SystemTrayIcon.cpp" compile="1" resource="0"
+              file="../../Utilities/SystemTrayIcon/SystemTrayIcon.cpp"/>
+        <FILE id="Q3vNJx" name="SystemTrayIcon.h" compile="0" resource="0"
+              file="../../Utilities/SystemTrayIcon/SystemTrayIcon.h"/>
+        <FILE id="QDlPCE" name="tray icon.jpg" compile="0" resource="1" file="../../Utilities/SystemTrayIcon/tray icon.jpg"/>
+      </GROUP>
+      <FILE id="JcIGgs" name="BackgroundMultiuserLogger.cpp" compile="1"
+            resource="0" file="../../Utilities/BackgroundMultiuserLogger.cpp"/>
+      <FILE id="luPTBI" name="BackgroundMultiuserLogger.h" compile="0" resource="0"
+            file="../../Utilities/BackgroundMultiuserLogger.h"/>
+      <FILE id="vzxA2I" name="Concepts.h" compile="0" resource="0" file="../../Utilities/Concepts.h"/>
+      <FILE id="BDyavE" name="LoggerWithOptionalCout.cpp" compile="1" resource="0"
+            file="../../Utilities/LoggerWithOptionalCout.cpp"/>
+      <FILE id="kj7skQ" name="LoggerWithOptionalCout.h" compile="0" resource="0"
+            file="../../Utilities/LoggerWithOptionalCout.h"/>
+      <FILE id="JUC2fo" name="MultiProducerSingleConsumerFifo.h" compile="0"
+            resource="0" file="../../Utilities/MultiProducerSingleConsumerFifo.h"/>
+      <FILE id="dNyJ5V" name="ThreadRunner.h" compile="0" resource="0" file="../../Utilities/ThreadRunner.h"/>
+      <FILE id="Bkr7Fj" name="TimerRunner.h" compile="0" resource="0" file="../../Utilities/TimerRunner.h"/>
+    </GROUP>
+  </MAINGROUP>
+  <MODULES>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+  </MODULES>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
+  <EXPORTFORMATS>
+    <VS2022 targetFolder="Builds/VisualStudio2022">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="BackgroundMultithreadedLogger"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="BackgroundMultithreadedLogger"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../JUCE/modules"/>
+      </MODULEPATHS>
+    </VS2022>
+    <XCODE_MAC targetFolder="Builds/MacOSX">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="BackgroundMultithreadedLogger"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="BackgroundMultithreadedLogger"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../JUCE/modules"/>
+      </MODULEPATHS>
+    </XCODE_MAC>
+  </EXPORTFORMATS>
+</JUCERPROJECT>
