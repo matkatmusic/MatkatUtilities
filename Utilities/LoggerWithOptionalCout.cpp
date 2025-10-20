@@ -10,7 +10,7 @@
 
 #include "LoggerWithOptionalCout.h"
 
-LoggerWithOptionalCout::LoggerWithOptionalCout(bool b, std::unique_ptr<juce::FileLogger> logger ) : writeToCout(b)
+LoggerWithOptionalCout::LoggerWithOptionalCout(LoggerWithOptionalCout::LogOptions b, std::unique_ptr<juce::FileLogger> logger ) : writeToCout(b)
 {
     fileLogger = std::move(logger);
     juce::Logger::setCurrentLogger(fileLogger.get());
@@ -21,9 +21,14 @@ LoggerWithOptionalCout::~LoggerWithOptionalCout()
     juce::Logger::setCurrentLogger(nullptr);
 }
 
+const juce::File& LoggerWithOptionalCout::getLogFile() const
+{
+    return fileLogger->getLogFile();
+}
+
 void LoggerWithOptionalCout::logMessage(const juce::String& message)
 {
-    if (writeToCout)
+    if (writeToCout == LogOptions::LogToCout)
     {
         std::cout << message << std::endl;
     }

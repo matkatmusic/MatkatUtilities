@@ -14,10 +14,17 @@
 
 struct LoggerWithOptionalCout
 {
-    LoggerWithOptionalCout(bool includeWritingToCout, std::unique_ptr<juce::FileLogger> logger);
+    enum class LogOptions
+    {
+        LogToCout,
+        DontLogToCout
+    };
+    
+    LoggerWithOptionalCout(LogOptions includeWritingToCout, std::unique_ptr<juce::FileLogger> logger);
     ~LoggerWithOptionalCout();
     void logMessage(const juce::String&);
+    const juce::File& getLogFile() const;
 private:
-    bool writeToCout;
+    LogOptions writeToCout;
     std::unique_ptr<juce::FileLogger> fileLogger;
 };
