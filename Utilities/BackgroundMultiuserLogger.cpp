@@ -60,26 +60,6 @@ void BackgroundMultiuserLogger::writeToLog(const juce::String& message)
     logger->writeToLogInternal(message);
 }
 
-//double BackgroundMultiuserLogger::getMessageTimestamp()
-//{
-//    auto ts = juce::Time::getMillisecondCounterHiRes();
-//    return updateLastTimestamp(ts);
-//}
-
-//double BackgroundMultiuserLogger::updateLastTimestamp(double ts)
-//{
-//    auto lastTS = lastMessageTimestamp.get();
-//    jassert( ts > lastTS ); //should never log two messages in the same millisecond
-//    if( ts <= lastTS )
-//    {
-//        jassertfalse;
-//        ts = lastTS + 0.0000001;
-//    }
-//    
-//    lastMessageTimestamp = ts;
-//    return ts;
-//}
-
 void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
 {
     /*
@@ -89,7 +69,6 @@ void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
     if( isConfigured == false )
         return;
     
-//    auto timestamp = getMessageTimestamp();
     auto timestamp = juce::Time::getMillisecondCounterHiRes() - startTime;
     auto producerIterator = getOrCreateProducer();
     
