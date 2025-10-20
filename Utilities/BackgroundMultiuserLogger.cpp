@@ -27,7 +27,33 @@ BackgroundMultiuserLogger::~BackgroundMultiuserLogger()
     timerRunner.reset();
     
     mpscFifo.reset();
+    
+    if( fileLogger && revealOnExit == RevealOptions::RevealOnExit )
+        fileLogger->getLogFile().revealToUser();
+    
+    fileLogger.reset();
     clearSingletonInstance();
+}
+
+void BackgroundMultiuserLogger::configure(LoggerWithOptionalCout::LogOptions alsoLogToCout,
+                                          RevealOptions revealLogFileOnExit,
+                                          MessageTimestampOptions withTimestamp,
+                                          MessageSortingOptions sortedOrNot_)
+{
+    auto welcomeMessage = juce::String("Welcome to ") + ProjectInfo::projectName;
+    welcomeMessage << " ";
+    welcomeMessage << ProjectInfo::versionString;
+    welcomeMessage << " spawned at ";
+    welcomeMessage << juce::Time::getCurrentTime().toISO8601(true);
+    
+    auto logger = std::unique_ptr<juce::FileLogger>(juce::FileLogger::createDateStampedLogger(ProjectInfo::projectName, "session", ".log", welcomeMessage));
+    fileLogger = std::make_unique<LoggerWithOptionalCout>(alsoLogToCout, std::move(logger));
+    
+    revealOnExit = revealLogFileOnExit;
+    withTS = withTimestamp;
+    sortedOrNot = sortedOrNot_;
+    
+    isConfigured = true;
 }
 
 void BackgroundMultiuserLogger::writeToLog(const juce::String& message)
@@ -36,20 +62,38 @@ void BackgroundMultiuserLogger::writeToLog(const juce::String& message)
     logger->writeToLogInternal(message);
 }
 
-void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
+double BackgroundMultiuserLogger::getMessageTimestamp()
 {
-    //Moved timestamp calculation to here so it's exactly when the function is called.
-    auto timestamp = juce::Time::getMillisecondCounterHiRes();
-    
+    auto ts = juce::Time::getMillisecondCounterHiRes();
+    return updateLastTimestamp(ts);
+}
+
+double BackgroundMultiuserLogger::updateLastTimestamp(double ts)
+{
     auto lastTS = lastMessageTimestamp.get();
-    jassert( timestamp > lastTS ); //should never log two messages in the same millisecond
-    if( timestamp <= lastTS )
+    jassert( ts > lastTS ); //should never log two messages in the same millisecond
+    if( ts <= lastTS )
     {
         jassertfalse;
-        timestamp = lastTS + 0.0000001;
+        ts = lastTS + 0.0000001;
     }
     
-    lastMessageTimestamp = timestamp;
+    lastMessageTimestamp = ts;
+    return ts;
+}
+
+void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
+{
+    auto timestamp = getMessageTimestamp();
+    
+    /*
+     you must call BML::getInstance()->configure(...) before you can start using the logger.
+     */
+    jassert(isConfigured);
+    if( isConfigured == false )
+        return;
+    
+    auto str = createMessageWithThreadName(message);
     
     auto threadID = juce::Thread::getCurrentThreadId();
     auto it = producerIndexes.find(threadID);
@@ -58,55 +102,48 @@ void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
         auto newProducer = mpscFifo->addProducer();
         auto producerIndex = mpscFifo->getProducerIndex(newProducer);
         producerIndexes[threadID] = producerIndex;
-        writeToLogInternal(message);
+//        writeToLogInternal(message); //whoops: this was adding the timestamp to the message twice!
+        log(producerIndex, timestamp, str);
     }
     else
     {
-        const auto threadName = []() -> juce::String
+        log(it->second, timestamp, str);
+    }
+}
+
+juce::String BackgroundMultiuserLogger::createMessageWithThreadName(juce::String message)
+{
+    const auto threadName = []() -> juce::String
+    {
+        if( juce::MessageManager::existsAndIsCurrentThread() )
         {
-            if( juce::MessageManager::existsAndIsCurrentThread() )
-            {
-                return "Message Thread";
-            }
-            
-            auto * currentThread = juce::Thread::getCurrentThread();
-            if(currentThread != nullptr )
-                return currentThread->getThreadName();
-            
-//            jassertfalse;
-//            return "No Thread Name";
-            return "Anonymous";
-        }();
+            return "juce::MessageThread";
+        }
         
-        juce::String str;
-        str << "thread [" << threadName << "]: ";
-        str << message;
-//#if JUCE_DEBUG
-#if false
-        DBG( str );
-        juce::ignoreUnused();
-#else
-        if( auto p = mpscFifo->getProducer(it->second) )
-        {
-            /*
-            auto timestamp = juce::Time::getMillisecondCounterHiRes();
-            
-            jassert( timestamp > lastMessageTimestamp ); //should never log two messages in the same millisecond
-            if( timestamp <= lastMessageTimestamp )
-            {
-                jassertfalse;
-                timestamp = lastMessageTimestamp + 0.0000001;
-            }
-            
-            lastMessageTimestamp = timestamp;
-             */
-            p->push({timestamp, str});
-        }
-        else
-        {
-            jassertfalse; //should never happen
-        }
-#endif
+        if( auto currentThread = juce::Thread::getCurrentThread() )
+            return currentThread->getThreadName();
+        
+        return "Anonymous Thread";
+    }();
+    
+    juce::String str;
+    str << "[" << threadName << "]: ";
+    str << message;
+    
+    return str;
+}
+
+void BackgroundMultiuserLogger::log(size_t producerIndex,
+                                    double timestamp,
+                                    juce::String str)
+{
+    if( auto p = mpscFifo->getProducer(producerIndex) )
+    {
+        p->push({timestamp, str});
+    }
+    else
+    {
+        jassertfalse; //should never happen
     }
 }
 
@@ -120,13 +157,26 @@ void BackgroundMultiuserLogger::flushMessagesFromFifo()
 {
     if( mpscFifo)
     {
-        mpscFifo->flushAllWithOptionalSort();
+        if( sortedOrNot == MessageSortingOptions::SortedByTimestamp )
+        {
+            mpscFifo->flushAllWithOptionalSort();
+        }
+        else
+        {
+            mpscFifo->flushAllToConsumerFifo();
+        }
+        
         decltype(mpscFifo)::element_type::ItemType message;
         while (mpscFifo->pull(message))
         {
             juce::String str;
-            str << juce::String::formatted("%f", message.timeOfCreation) << ": ";
-//            str << message.timeOfCreation << ": ";
+            
+            if( withTS == MessageTimestampOptions::Show )
+            {
+                str << juce::String::formatted("%f", message.timeOfCreation) << ": ";
+                //            str << message.timeOfCreation << ": ";
+            }
+            
             str << message.item;
             juce::Logger::writeToLog(str);
         }

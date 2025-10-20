@@ -50,7 +50,7 @@ class LoggerExample : public juce::JUCEApplication
 public:
     const juce::String getApplicationName() override;
     const juce::String getApplicationVersion() override;
-    
+    LoggerExample();
     ~LoggerExample() override;
     
     void initialise (const juce::String& commandLineParameters) override;
@@ -63,7 +63,6 @@ public:
                                      const juce::String& sourceFilename,
                              int lineNumber) override;
 private:
-    std::unique_ptr<LoggerWithOptionalCout> fileLogger;
     void configureLogger();
 #if JUCE_MAC
     std::unique_ptr<DummyMenuBarModel> model;
@@ -73,9 +72,27 @@ private:
     std::vector< std::unique_ptr<BackgroundJob> > backgroundJobs;
 };
 //==============================================================================
+LoggerExample::LoggerExample()
+{
+    /*
+     the first thing you must do before you can use the logger is configure it.
+     Decide if you want to also log to std::cout.
+     Decide if you want the log file revealed when the program exits.
+     Decide if you want the messages to have timestamps
+     Decide if you want the messages to be sorted by their timestamps
+     */
+    BML::getInstance()->configure(LoggerWithOptionalCout::LogOptions::LogToCout,
+                                  BML::RevealOptions::RevealOnExit,
+                                  BML::MessageTimestampOptions::Show,
+                                  BML::MessageSortingOptions::SortedByTimestamp);
+}
+
 LoggerExample::~LoggerExample()
 {
-    
+    /*
+     this should be the last thing you do in your shutdown method.
+     */
+    BML::deleteInstance();
 }
 
 const juce::String LoggerExample::getApplicationName()     { return ProjectInfo::projectName; }
@@ -113,10 +130,7 @@ void signalHandler(int signal)
 
 void LoggerExample::initialise (const juce::String& commandLineParameters)
 {
-    /*
-     set up logging
-     */
-    configureLogger();
+    BML::writeToLog("LoggerExample::initialise() invoked with args: " + commandLineParameters );
     
 #if JUCE_MAC
     model = std::make_unique<DummyMenuBarModel>();
@@ -136,10 +150,6 @@ void LoggerExample::initialise (const juce::String& commandLineParameters)
         systemTrayIcon->setIconImage(iconImage, iconImage);
     }
     
-    auto args = juce::ArgumentList(ProjectInfo::projectName, commandLineParameters);
-    
-    BML::writeToLog("Command line arguments: " + commandLineParameters);
-    
     BML::writeToLog("Launching 10 Background Jobs");
     for( int i = 0; i < 10; ++i )
     {
@@ -150,18 +160,6 @@ void LoggerExample::initialise (const juce::String& commandLineParameters)
 bool LoggerExample::moreThanOneInstanceAllowed()
 {
     return true;
-}
-
-void LoggerExample::configureLogger()
-{
-    auto welcomeMessage = juce::String("Welcome to ") + ProjectInfo::projectName;
-    welcomeMessage << " ";
-    welcomeMessage << ProjectInfo::versionString;
-    welcomeMessage << " spawned at ";
-    welcomeMessage << juce::Time::getCurrentTime().toISO8601(true);
-    
-    auto logger = std::unique_ptr<juce::FileLogger>(juce::FileLogger::createDateStampedLogger(ProjectInfo::projectName, "session", ".log", welcomeMessage));
-    fileLogger = std::make_unique<LoggerWithOptionalCout>(true, std::move(logger));
 }
 
 void LoggerExample::systemRequestedQuit()
@@ -180,14 +178,9 @@ void LoggerExample::systemRequestedQuit()
 
 void LoggerExample::shutdown()
 {
-    BML::writeToLog("UDPSender::shutdown()");
+    BML::writeToLog("LoggerExample::shutdown()");
     
     BML::printAllRemainingMessages();
-    BML::deleteInstance();
-    /*
-     this should be the last thing you do in your shutdown method.
-     */
-    juce::Logger::setCurrentLogger(nullptr);
 }
 
 void LoggerExample::unhandledException(const std::exception* e,
