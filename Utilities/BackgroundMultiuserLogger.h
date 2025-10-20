@@ -74,17 +74,12 @@ private:
     
     juce::CriticalSection indexesLock;
     
-    /*
-     The purpose of this class is to track threads that are logging messages that have stopped running.
-     if the threads have stopped, then there is no reason to have an entry in the MPSCFifo for that thread.
-     */
-    struct ProducingThreadTracker : juce::Thread::Listener
+    struct ProducingThreadDetails
     {
-        ProducingThreadTracker(size_t index_, juce::Thread* t) : thread(t), index(index_)
+        ProducingThreadDetails(size_t index_, juce::Thread* thread) : index(index_)
         {
             if( thread )
             {
-                t->addListener(this);
                 threadName = thread->getThreadName();
             }
             else if( juce::MessageManager::existsAndIsCurrentThread() )
@@ -97,34 +92,14 @@ private:
             }
         }
         
-        ~ProducingThreadTracker() override
-        {
-            if( thread )
-                thread->removeListener(this);
-        }
-        void exitSignalSent() override
-        {
-            willStopSoon = true;
-        }
-        
         size_t getIndex() const { return index; }
-        bool isStopping() const { return willStopSoon; }
-        bool isRunning() const
-        {
-            if( thread )
-                return thread->isThreadRunning();
-            
-            return false;
-        }
         juce::String getName() const { return threadName; }
     private:
-        bool willStopSoon = false;
-        juce::Thread* thread;
         size_t index;
         juce::String threadName;
     };
     
-    using Map = std::unordered_map<juce::Thread::ThreadID, std::unique_ptr<ProducingThreadTracker>>;
+    using Map = std::unordered_map<juce::Thread::ThreadID, std::unique_ptr<ProducingThreadDetails>>;
     Map producerIndexes;
     
     using iterator = Map::iterator;

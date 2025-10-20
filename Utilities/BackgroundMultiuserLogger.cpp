@@ -165,7 +165,7 @@ BackgroundMultiuserLogger::Map::iterator BackgroundMultiuserLogger::addProducerI
                                                       size_t producerIndex,
                                                       juce::Thread *thread)
 {
-    auto [it, result] = producerIndexes.emplace(id, std::make_unique<ProducingThreadTracker>(producerIndex, thread));
+    auto [it, result] = producerIndexes.emplace(id, std::make_unique<ProducingThreadDetails>(producerIndex, thread));
     jassert( result != false );
     juce::ignoreUnused(result);
     return it;

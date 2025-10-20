@@ -59,8 +59,6 @@
  @endcode
  */
 
-
-
 template<typename ItemType>
 struct DefaultNonSorter
 {
@@ -129,7 +127,8 @@ struct MultiProducerSingleConsumerFifo
         }
         
         //if this happens, the producer fifo doesn't exist!
-        //call 'createProducer()' first, then add to it.
+        //call 'createProducer()' first to get a valid index, then call 'add(element, index)'.
+        jassertfalse;
         return false;
     }
     
@@ -237,16 +236,3 @@ MultiProducerSingleConsumerFifo<
     Capacity,
     ConsumerCapacity
 >;
-
-//template<
-//    typename T,
-//    size_t Capacity = 1'000,
-//    size_t ConsumerCapacity = Capacity * 4
-//>
-//using TimedItemMultiProducerSingleConsumerFifoNoSort =
-//MultiProducerSingleConsumerFifo<
-//    TimedItem<T>,
-//    TimedItemNoSort<T>,
-//    Capacity,
-//    ConsumerCapacity
-//>;
