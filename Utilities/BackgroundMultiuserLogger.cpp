@@ -14,17 +14,20 @@
 BackgroundMultiuserLogger::BackgroundMultiuserLogger()
 {
     mpscFifo = std::make_unique<TimedItemMultiProducerSingleConsumerFifoDefaultSort<juce::String>>();
-    timerRunner = std::make_unique<TimerRunner<BackgroundMultiuserLogger, 25>>(*this, &BackgroundMultiuserLogger::flushMessagesFromFifo, TimerLaunchType::StartWhenSignaled);
-    timerRunner->launch();
+    messagePurger = std::make_unique<TimerRunner<BackgroundMultiuserLogger, 25>>(*this, &BackgroundMultiuserLogger::flushMessagesFromFifo, TimerLaunchType::StartWhenSignaled);
+    messagePurger->launch();
+    
+    threadTrackerPurger = std::make_unique<TimerRunner<BackgroundMultiuserLogger, 1000>>(*this, &BackgroundMultiuserLogger::purgeUnneededTrackers, TimerLaunchType::StartWhenSignaled);
+    threadTrackerPurger->launch();
 };
 
 BackgroundMultiuserLogger::~BackgroundMultiuserLogger()
 {
     flushMessagesFromFifo();
-    if( timerRunner )
-        timerRunner->halt();
+    if( messagePurger )
+        messagePurger->halt();
     
-    timerRunner.reset();
+    messagePurger.reset();
     
     mpscFifo.reset();
     
@@ -37,8 +40,7 @@ BackgroundMultiuserLogger::~BackgroundMultiuserLogger()
 
 void BackgroundMultiuserLogger::configure(LoggerWithOptionalCout::LogOptions alsoLogToCout,
                                           RevealOptions revealLogFileOnExit,
-                                          MessageTimestampOptions withTimestamp,
-                                          MessageSortingOptions sortedOrNot_)
+                                          MessageTimestampOptions withTimestamp)
 {
     auto welcomeMessage = juce::String("Welcome to ") + ProjectInfo::projectName;
     welcomeMessage << " ";
@@ -51,7 +53,6 @@ void BackgroundMultiuserLogger::configure(LoggerWithOptionalCout::LogOptions als
     
     revealOnExit = revealLogFileOnExit;
     withTS = withTimestamp;
-    sortedOrNot = sortedOrNot_;
     
     isConfigured = true;
 }
@@ -84,50 +85,117 @@ double BackgroundMultiuserLogger::updateLastTimestamp(double ts)
 
 void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
 {
-    auto timestamp = getMessageTimestamp();
-    
     /*
-     you must call BML::getInstance()->configure(...) before you can start using the logger.
+     you must call BML::getInstance()->configure(...) before you can start using the logger!!
      */
     jassert(isConfigured);
     if( isConfigured == false )
         return;
     
-    auto str = createMessageWithThreadName(message);
+    auto timestamp = getMessageTimestamp();
+    auto producerIterator = getOrCreateProducer();
     
-    auto threadID = juce::Thread::getCurrentThreadId();
-    auto it = producerIndexes.find(threadID);
-    if (it == producerIndexes.end())
+    jassert(producerIterator != producerIndexes.end() );
+    jassert(producerIterator->second != nullptr);
+    
+    auto str = createMessageWithThreadName(message, producerIterator);
+    
+    log(producerIterator->second->getIndex(), timestamp, str);
+}
+
+BackgroundMultiuserLogger::Map::iterator BackgroundMultiuserLogger::getOrCreateProducer()
+{
+    const juce::ScopedLock lock(indexesLock);
+    
+    if( isThisAJuceThread() )
     {
-        auto newProducer = mpscFifo->addProducer();
-        auto producerIndex = mpscFifo->getProducerIndex(newProducer);
-        producerIndexes[threadID] = producerIndex;
-//        writeToLogInternal(message); //whoops: this was adding the timestamp to the message twice!
-        log(producerIndex, timestamp, str);
+        //do we have a producer for this thread yet?
+        auto it = getEntryInMapForCurrentThread();
+        if( it != producerIndexes.end() )
+        {
+            return it;
+        }
+        
+        /*
+         from juce::Thread::getCurrentThread() docs:
+         Note that the main UI thread (or other non-JUCE threads) don't have a Thread
+         object associated with them, so this will return nullptr.
+         
+         it's ok if we pass in nullptr to createProducerIndexForCurrentThread though.
+         */
+        auto currentThread = juce::Thread::getCurrentThread();
+        return createProducerForCurrentThread(currentThread);
+    }
+    
+    /*
+     it's some other thread type
+     use a fallback with an invalid juce::ThreadID.
+     if no producer exists for this other thread, make one.
+     */
+    auto fallbackID = juce::Thread::ThreadID { nullptr };
+    
+    //do we have a producer yet?
+    auto fallbackIT = producerIndexes.find(fallbackID);
+    if( fallbackIT == producerIndexes.end() )
+    {
+        auto newProducerIndex = mpscFifo->createProducer();
+        
+        return addProducerIndexEntry(fallbackID, newProducerIndex, nullptr);
+    }
+    
+    return fallbackIT;
+}
+
+bool BackgroundMultiuserLogger::isThisAJuceThread()
+{
+    if( juce::MessageManager::existsAndIsCurrentThread() )
+        return true;
+    
+    if( auto currentThread = juce::Thread::getCurrentThread() )
+        return true;
+    
+    return false;
+}
+    
+BackgroundMultiuserLogger::Map::iterator BackgroundMultiuserLogger::getEntryInMapForCurrentThread()
+{
+    auto currentThreadID = juce::Thread::getCurrentThreadId();
+    return producerIndexes.find(currentThreadID);
+}
+
+BackgroundMultiuserLogger::Map::iterator BackgroundMultiuserLogger::addProducerIndexEntry(juce::Thread::ThreadID id,
+                                                      size_t producerIndex,
+                                                      juce::Thread *thread)
+{
+    auto [it, result] = producerIndexes.emplace(id, std::make_unique<ProducingThreadTracker>(producerIndex, thread));
+    jassert( result != false );
+    juce::ignoreUnused(result);
+    return it;
+}
+
+BackgroundMultiuserLogger::Map::iterator BackgroundMultiuserLogger::createProducerForCurrentThread(juce::Thread* thread)
+{
+    return addProducerIndexEntry(juce::Thread::getCurrentThreadId(),
+                                 mpscFifo->createProducer(),
+                                 thread);
+}
+
+juce::String BackgroundMultiuserLogger::createMessageWithThreadName(juce::String message, iterator it)
+{
+    juce::String str;
+    str << "[";
+    
+    if( it != producerIndexes.end() && it->second != nullptr )
+    {
+        str << it->second->getName();
     }
     else
     {
-        log(it->second, timestamp, str);
+        str << "unknown threadName";
     }
-}
-
-juce::String BackgroundMultiuserLogger::createMessageWithThreadName(juce::String message)
-{
-    const auto threadName = []() -> juce::String
-    {
-        if( juce::MessageManager::existsAndIsCurrentThread() )
-        {
-            return "juce::MessageThread";
-        }
-        
-        if( auto currentThread = juce::Thread::getCurrentThread() )
-            return currentThread->getThreadName();
-        
-        return "Anonymous Thread";
-    }();
     
-    juce::String str;
-    str << "[" << threadName << "]: ";
+    str << "]: ";
+    
     str << message;
     
     return str;
@@ -137,14 +205,11 @@ void BackgroundMultiuserLogger::log(size_t producerIndex,
                                     double timestamp,
                                     juce::String str)
 {
-    if( auto p = mpscFifo->getProducer(producerIndex) )
-    {
-        p->push({timestamp, str});
-    }
-    else
-    {
-        jassertfalse; //should never happen
-    }
+    jassert(mpscFifo != nullptr && isConfigured );
+    
+    auto logResult = mpscFifo->add({timestamp, str}, producerIndex);
+    jassert(logResult == true); //if this fails, the ProducerCapacity parameter of the MPSCFifo is too small.
+    juce::ignoreUnused(logResult);
 }
 
 void BackgroundMultiuserLogger::printAllRemainingMessages()
@@ -157,14 +222,7 @@ void BackgroundMultiuserLogger::flushMessagesFromFifo()
 {
     if( mpscFifo)
     {
-        if( sortedOrNot == MessageSortingOptions::SortedByTimestamp )
-        {
-            mpscFifo->flushAllWithOptionalSort();
-        }
-        else
-        {
-            mpscFifo->flushAllToConsumerFifo();
-        }
+        mpscFifo->flushAllToConsumerFifo();
         
         decltype(mpscFifo)::element_type::ItemType message;
         while (mpscFifo->pull(message))
@@ -185,8 +243,32 @@ void BackgroundMultiuserLogger::flushMessagesFromFifo()
     {
         jassertfalse; //should never happen
     }
-    
-    //ideally check if the thread is still running here, and if not, remove it from the producerIndexes and mpscFifo
+}
+
+void BackgroundMultiuserLogger::purgeUnneededTrackers()
+{
+    //if a thread is no longer running, remove its producer from the MPSC, because it's just wasting memory
+    auto it = producerIndexes.begin();
+    while( it != producerIndexes.end() )
+    {
+        auto& [k, v] = *it;
+        bool removed = false;
+        if( v != nullptr )
+        {
+            if( v->isStopping() && v->isRunning() == false )
+            {
+                DBG( "thread " << v->getName() << " is no longer running.  removing associated producer from fifo" );
+                mpscFifo->removeProducer(v->getIndex());
+                it = producerIndexes.erase(it);
+                removed = true;
+            }
+        }
+        
+        if( removed == false )
+        {
+            ++it;
+        }
+    }
 }
 
 JUCE_IMPLEMENT_SINGLETON (BackgroundMultiuserLogger)

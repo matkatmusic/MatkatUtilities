@@ -18,8 +18,6 @@ struct BackgroundJob : juce::Thread
     BackgroundJob(int num);
     
     void run() override;
-    
-    int counter = 10;
 };
 
 BackgroundJob::BackgroundJob(int num) : juce::Thread(juce::String("BackgroundJob_") + juce::String(num))
@@ -30,6 +28,7 @@ BackgroundJob::BackgroundJob(int num) : juce::Thread(juce::String("BackgroundJob
 void BackgroundJob::run()
 {
     BML::writeToLog(getThreadName() + " has started running" );
+    int counter = 10;
     while( threadShouldExit() == false )
     {
         if( counter == 0 )
@@ -79,12 +78,10 @@ LoggerExample::LoggerExample()
      Decide if you want to also log to std::cout.
      Decide if you want the log file revealed when the program exits.
      Decide if you want the messages to have timestamps
-     Decide if you want the messages to be sorted by their timestamps
      */
     BML::getInstance()->configure(LoggerWithOptionalCout::LogOptions::LogToCout,
                                   BML::RevealOptions::RevealOnExit,
-                                  BML::MessageTimestampOptions::Show,
-                                  BML::MessageSortingOptions::SortedByTimestamp);
+                                  BML::MessageTimestampOptions::Show);
 }
 
 LoggerExample::~LoggerExample()

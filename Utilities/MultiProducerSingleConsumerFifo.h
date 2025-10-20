@@ -15,134 +15,154 @@
 #include "Concepts.h"
 #include "TimerRunner.h"
 
+/**
+ A Multi-Producer Single-Consumer fifo.
+ 
+ It manages the producer objects and consumes elements from each producer using a timed interval of 20ms.
+ 
+ Usage:
+ - First, from your calling thread, create a producer and store the index of that producer.
+ - Then, Whenever you need to push from the calling thread, use the index given to you.
+ 
+ ex:
+ @code
+    
+ struct MyBackgroundThreadClass : juce::Thread
+ {
+     MyBackgroundThreadClass(MPSCFifo& mpsc) :
+     juce::Thread("MyBackgroundThreadClass"),
+     mpscfifo(mpsc)
+     {
+         index = mpscfifo.createProducer();
+         startThread();
+     }
+     
+     ~MyBackgroundThreadClass() override;
+     {
+         mpscfifo.removeProducer(index);
+         stopThread(100);
+     }
+     
+     void run() override
+     {
+         while( threadShouldExit() == false )
+         {
+             //add some data to the MPSC using your index from your background thread
+             mpscfifo.add(data, index);
+         }
+     }
+     
+     MPSCFifo& mpscfifo;
+     size_t index;
+ };
+ 
+ @endcode
+ */
+
+
+
+template<typename ItemType>
+struct DefaultNonSorter
+{
+    static bool compare(const ItemType& a, const ItemType& b)
+    {
+        return true;
+    }
+};
+
 template<
     typename T,
-    IsSorterType<T> SortFunc,
-    size_t Capacity = 1'000,
-    size_t ConsumerCapacity = Capacity * 4
+    IsSorterType<T> SortFunc = DefaultNonSorter<T>,
+    size_t ProducerCapacity = 1'000,
+    size_t ConsumerCapacity = ProducerCapacity * 8
 >
 struct MultiProducerSingleConsumerFifo
 {
+    using ItemType = T;
+    
+    using ProducerFifoType = SimpleMBComp::Fifo<ItemType, ProducerCapacity>;
+    using ConsumerFifoType = SimpleMBComp::Fifo<ItemType, ConsumerCapacity>;
+    
     ~MultiProducerSingleConsumerFifo()
     {
         timerRunner.halt();
         producers.clear();
-        producerFifos.clear();
     }
     
-    using ItemType = T;
-    
-    using ProducerFifoType = SimpleMBComp::Fifo<ItemType, Capacity>;
-    using ConsumerFifoType = SimpleMBComp::Fifo<ItemType, Capacity * 4>;
-    
-    struct Producer
+    size_t createProducer()
     {
-        Producer(ProducerFifoType& fifo_) : fifo(fifo_) {}
-        bool push(const ItemType& item)
-        {
-            return fifo.push(item);
-        }
-    private:
-        ProducerFifoType& fifo;
-    };
-    
-    Producer* addProducer()
-    {
-        juce::ScopedLock sl(creationLock);
-        producerFifos.emplace_back(std::make_unique<ProducerFifoType>());
-        producers.emplace_back(std::make_unique<Producer>(*producerFifos.back()));
-        auto* producer = producers.back().get();
-        return producer;
+        juce::ScopedLock sl(producersLock);
+        
+        producers.push_back( std::make_unique<ProducerFifoType>() );
+        return producers.size() - 1;
     }
     
-    Producer* getProducer(size_t index)
+    bool removeProducer(size_t index)
     {
-        juce::ScopedLock sl(creationLock);
-        if (index < producers.size())
+        juce::ScopedLock sl(producersLock);
+        if( index < producers.size() )
         {
-            return producers[index].get();
+            if( producers[index] != nullptr)
+            {
+                flushAllToConsumerFifo(); //drain it before deleting
+                
+                auto it = producers.begin();
+                std::advance(it, index);
+                producers.erase(it);
+                
+                return true;
+            }
         }
         
-        return nullptr;
+        return false;
     }
     
-    int getProducerIndex(Producer* producer)
+    bool add(const ItemType& element, size_t index)
     {
-        juce::ScopedLock sl(creationLock);
-        auto it = std::find_if(producers.begin(),
-                               producers.end(),
-                               [producer](const std::unique_ptr<Producer>& p)
-                               {
-            return p.get() == producer;
-        });
-        
-        if (it != producers.end())
+        juce::ScopedLock stl(producersLock);
+        if( index < producers.size() )
         {
-            return static_cast<int>(std::distance(producers.begin(), it));
+            if( auto p = producers[index].get() )
+            {
+                return p->push(element);
+            }
         }
         
-        return -1; //not found
-    }
-    
-    void removeProducer(Producer* producer)
-    {
-        juce::ScopedLock sl(creationLock);
-        auto it = std::find_if(producers.begin(),
-                               producers.end(),
-                               [producer](const std::unique_ptr<Producer>& p)
-                               {
-            return p.get() == producer;
-        });
-
-        if (it != producers.end())
-        {
-            auto fifoIt = producerFifos.begin();
-            std::advance(fifoIt, std::distance(producers.begin(), it));
-
-            producerFifos.erase(fifoIt);
-            producers.erase(it);
-        }
-    }
-    
-    void flushAllWithOptionalSort()
-    {
-        juce::ScopedLock sl(creationLock);
-        std::vector<ItemType> itemsToPush = gatherLatestFromAllProducers();
-        
-        if( !itemsToPush.empty() )
-        {
-            std::sort(itemsToPush.begin(),
-                      itemsToPush.end(),
-                      SortFunc::compare);
-            
-            flushAll(itemsToPush);
-        }
-    }
-
-    void flushAllToConsumerFifo()
-    {
-        juce::ScopedLock sl(creationLock);
-        std::vector<ItemType> itemsToPush = gatherLatestFromAllProducers();
-        
-        if( !itemsToPush.empty() )
-        {
-            flushAll(itemsToPush);
-        }
+        //if this happens, the producer fifo doesn't exist!
+        //call 'createProducer()' first, then add to it.
+        return false;
     }
     
     bool pull(ItemType& item)
     {
         return consumerFifo.pull(item);
     }
-private:
-    std::vector<std::unique_ptr<Producer>> producers;
-    std::vector< std::unique_ptr<ProducerFifoType> > producerFifos;
     
+    void flushAllToConsumerFifo()
+    {
+        auto itemsToPush = gatherLatestFromAllProducers();
+        if( itemsToPush.empty() )
+        {
+            return;
+        }
+        
+        //if sortFunc is not defaultNonSorter, skip calling std::sort()
+        if constexpr( std::is_same_v<SortFunc, DefaultNonSorter<ItemType>> == false )
+        {
+            std::sort(itemsToPush.begin(),
+                      itemsToPush.end(),
+                      SortFunc::compare);
+        }
+        
+        flushAll(itemsToPush);
+    }
+private:
+    juce::CriticalSection producersLock;
+    
+    std::vector< std::unique_ptr<ProducerFifoType> > producers;
     ConsumerFifoType consumerFifo;
-    juce::CriticalSection creationLock;
     
     using ThisClass = MultiProducerSingleConsumerFifo;
-    
     TimerRunner<ThisClass, 20> timerRunner
     {
         *this,
@@ -152,10 +172,10 @@ private:
     
     std::vector<ItemType> gatherLatestFromAllProducers()
     {
-        juce::ScopedLock sl(creationLock);
+        juce::ScopedLock sl(producersLock);
         
         std::vector<ItemType> latestItems;
-        for( auto& fifo : producerFifos )
+        for( auto& fifo : producers )
         {
             if( fifo != nullptr )
             {
@@ -170,14 +190,14 @@ private:
         return latestItems;
     }
     
-    void flushAll(std::vector<ItemType> itemsToFlush)
+    void flushAll(const std::vector<ItemType>& itemsToFlush)
     {
         jassert(itemsToFlush.size() < consumerFifo.getFreeSpace() );
         
         for( const auto& item : itemsToFlush )
         {
             //continually try to push this element into the consumer fifo.
-            //if this fails, the consumer fifo isn't being queried often enough
+            //if this fails, the consumer fifo isn't being emptied often enough
             auto result = false;
             do
             {
@@ -204,16 +224,6 @@ struct TimedItemSort
         return a.timeOfCreation < b.timeOfCreation;
     }
 };
-
-//template<typename T>
-//struct TimedItemNoSort
-//{
-//    static bool compare(const TimedItem<T>& ,
-//                        const TimedItem<T>& )
-//    {
-//        return true;
-//    }
-//};
 
 template<
     typename T,

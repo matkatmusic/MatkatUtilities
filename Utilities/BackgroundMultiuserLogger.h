@@ -19,18 +19,24 @@
 
 /**
  The `BackgroundMultiuserLogger` is a wrapper class around an instance of the `juce::FileLogger` class.
+ 
  The wrapper adds a `juce::Singleton` interface for multiple threads to write to the `juce::FileLogger`simultaneously, without data races, and with timestamps per message.
- The wrapper class achieves this by using a `MultiProducerSingleConsumerFifo<T>` for collecting messages, that owns `Producer` instances and their associated `Fifo<T>` instances.
- A `Key-Value` map is used to coordinate collection of messages and sending them to the correct Producer.
+ The wrapper class achieves this by using a `MultiProducerSingleConsumerFifo<T>` for collecting messages, that owns `Producer Fifo<T>` instances.
+ 
+ A `Key-Value` `unordered_map` is used to coordinate collection of messages and sending them to the correct Producer fifo.
  The `Key` is the calling thread's `threadID`.
- The `Value` in the map is the index of the `Producer` in the `MPSCFifo`'s list of `Producer`s
- If the `Key` (`threadID`) doesn't exist in the map, a `Producer` object and `Fifo<T>` object are created in the `MPSCFifo` instance.
- The `message` is timestamped and added to that producer's fifo.
- A `TimerRunner` object periodically tells the `MPSCFifo` to retrieve all messages from each `Producer`'s fifo, sort them by their timestamp, and then pass then to the `MPSCFifo`'s `SingleConsumer` `Fifo<T>`.
+ The `Value` in the map is the index of the `Producer` in the `MPSCFifo`'s list of `Producer Fifo<T>`s
+ 
+ If the `Key` (`threadID`) doesn't exist in the map, a `Producer` is automatically created.
+ when you call `writeToLog(message)`, the `message` is timestamped and added to that Producer's fifo.
+ 
+ A `TimerRunner` object periodically tells the `MPSCFifo` to retrieve all messages from each `Producer Fifo<T>`, sort them by their timestamp, and then pass then to the `MPSCFifo`'s `SingleConsumer` `Fifo<T>`.
  Then, all messages in the SingleConsumer fifo are passed to the `juce::FileLogger` instance and written to the log file.
  
- Helper functions include:
- - `printAllRemainingMessages()` which flushes the MSPCFifo to the FileLogger
+ Be sure to call `configure()` before you start logging messages!
+ 
+ Helper functions:
+ - `printAllRemainingMessages()` which flushes the `MSPCFifo` to the FileLogger
  */
 
 struct BackgroundMultiuserLogger
@@ -51,16 +57,9 @@ struct BackgroundMultiuserLogger
         Hide
     };
     
-    enum class MessageSortingOptions
-    {
-        SortedByTimestamp,
-        Unsorted
-    };
-    
     void configure(LoggerWithOptionalCout::LogOptions alsoLogToCout, 
                    RevealOptions revealLogFileOnExit,
-                   MessageTimestampOptions withTimestamp,
-                   MessageSortingOptions sortedOrNot);
+                   MessageTimestampOptions withTimestamp);
     
     static void writeToLog(const juce::String& message);
     
@@ -70,27 +69,94 @@ struct BackgroundMultiuserLogger
 private:
     RevealOptions revealOnExit = RevealOptions::DontRevealOnExit;
     MessageTimestampOptions withTS = MessageTimestampOptions::Hide;
-    MessageSortingOptions sortedOrNot = MessageSortingOptions::SortedByTimestamp;
     bool isConfigured = false;
     std::unique_ptr<LoggerWithOptionalCout> fileLogger;
-    std::unordered_map<juce::Thread::ThreadID, size_t> producerIndexes;
+    
+    juce::CriticalSection indexesLock;
+    
+    /*
+     The purpose of this class is to track threads that are logging messages that have stopped running.
+     if the threads have stopped, then there is no reason to have an entry in the MPSCFifo for that thread.
+     */
+    struct ProducingThreadTracker : juce::Thread::Listener
+    {
+        ProducingThreadTracker(size_t index_, juce::Thread* t) : thread(t), index(index_)
+        {
+            if( thread )
+            {
+                t->addListener(this);
+                threadName = thread->getThreadName();
+            }
+            else if( juce::MessageManager::existsAndIsCurrentThread() )
+            {
+                threadName = "juce::MessageThread";
+            }
+            else
+            {
+                threadName = "Anonymous Thread";
+            }
+        }
+        
+        ~ProducingThreadTracker() override
+        {
+            if( thread )
+                thread->removeListener(this);
+        }
+        void exitSignalSent() override
+        {
+            willStopSoon = true;
+        }
+        
+        size_t getIndex() const { return index; }
+        bool isStopping() const { return willStopSoon; }
+        bool isRunning() const
+        {
+            if( thread )
+                return thread->isThreadRunning();
+            
+            return false;
+        }
+        juce::String getName() const { return threadName; }
+    private:
+        bool willStopSoon = false;
+        juce::Thread* thread;
+        size_t index;
+        juce::String threadName;
+    };
+    
+    using Map = std::unordered_map<juce::Thread::ThreadID, std::unique_ptr<ProducingThreadTracker>>;
+    Map producerIndexes;
+    
+    using iterator = Map::iterator;
+    
     std::unique_ptr<TimedItemMultiProducerSingleConsumerFifoDefaultSort<juce::String>> mpscFifo;
     
     juce::Atomic<double> lastMessageTimestamp = 0.0;
+    std::unique_ptr<TimerRunner<BackgroundMultiuserLogger, 25>> messagePurger;
+    std::unique_ptr<TimerRunner<BackgroundMultiuserLogger, 1000>> threadTrackerPurger;
     
     void writeToLogInternal(const juce::String& message);
     
     void flushMessagesFromFifo();
     
-    std::unique_ptr<TimerRunner<BackgroundMultiuserLogger, 25>> timerRunner;
+    void purgeUnneededTrackers();
     
-    juce::String createMessageWithThreadName(juce::String str);
+    juce::String createMessageWithThreadName(juce::String str, iterator producerIterator);
     void log(size_t producerIndex,
              double timestamp,
              juce::String str);
     
     double getMessageTimestamp();
     double updateLastTimestamp(double ts);
+    
+    iterator getOrCreateProducer();
+    iterator createProducerForCurrentThread(juce::Thread* thread);
+    iterator getEntryInMapForCurrentThread();
+    
+    static bool isThisAJuceThread();
+    iterator addProducerIndexEntry(juce::Thread::ThreadID id,
+                               size_t producerIndex,
+                               juce::Thread* thread);
 };
 
 using BML = BackgroundMultiuserLogger;
