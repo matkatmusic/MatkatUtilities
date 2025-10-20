@@ -11,6 +11,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "Concepts.h"
 
 enum class TimerLaunchType
 {
