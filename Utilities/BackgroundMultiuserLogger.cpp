@@ -16,9 +16,6 @@ BackgroundMultiuserLogger::BackgroundMultiuserLogger()
     mpscFifo = std::make_unique<TimedItemMultiProducerSingleConsumerFifoDefaultSort<juce::String>>();
     messagePurger = std::make_unique<TimerRunner<BackgroundMultiuserLogger, 25>>(*this, &BackgroundMultiuserLogger::flushMessagesFromFifo, TimerLaunchType::StartWhenSignaled);
     messagePurger->launch();
-    
-    threadTrackerPurger = std::make_unique<TimerRunner<BackgroundMultiuserLogger, 1000>>(*this, &BackgroundMultiuserLogger::purgeUnneededTrackers, TimerLaunchType::StartWhenSignaled);
-    threadTrackerPurger->launch();
 };
 
 BackgroundMultiuserLogger::~BackgroundMultiuserLogger()
@@ -63,25 +60,25 @@ void BackgroundMultiuserLogger::writeToLog(const juce::String& message)
     logger->writeToLogInternal(message);
 }
 
-double BackgroundMultiuserLogger::getMessageTimestamp()
-{
-    auto ts = juce::Time::getMillisecondCounterHiRes();
-    return updateLastTimestamp(ts);
-}
+//double BackgroundMultiuserLogger::getMessageTimestamp()
+//{
+//    auto ts = juce::Time::getMillisecondCounterHiRes();
+//    return updateLastTimestamp(ts);
+//}
 
-double BackgroundMultiuserLogger::updateLastTimestamp(double ts)
-{
-    auto lastTS = lastMessageTimestamp.get();
-    jassert( ts > lastTS ); //should never log two messages in the same millisecond
-    if( ts <= lastTS )
-    {
-        jassertfalse;
-        ts = lastTS + 0.0000001;
-    }
-    
-    lastMessageTimestamp = ts;
-    return ts;
-}
+//double BackgroundMultiuserLogger::updateLastTimestamp(double ts)
+//{
+//    auto lastTS = lastMessageTimestamp.get();
+//    jassert( ts > lastTS ); //should never log two messages in the same millisecond
+//    if( ts <= lastTS )
+//    {
+//        jassertfalse;
+//        ts = lastTS + 0.0000001;
+//    }
+//    
+//    lastMessageTimestamp = ts;
+//    return ts;
+//}
 
 void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
 {
@@ -92,7 +89,8 @@ void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
     if( isConfigured == false )
         return;
     
-    auto timestamp = getMessageTimestamp();
+//    auto timestamp = getMessageTimestamp();
+    auto timestamp = juce::Time::getMillisecondCounterHiRes() - startTime;
     auto producerIterator = getOrCreateProducer();
     
     jassert(producerIterator != producerIndexes.end() );
@@ -242,32 +240,6 @@ void BackgroundMultiuserLogger::flushMessagesFromFifo()
     else
     {
         jassertfalse; //should never happen
-    }
-}
-
-void BackgroundMultiuserLogger::purgeUnneededTrackers()
-{
-    //if a thread is no longer running, remove its producer from the MPSC, because it's just wasting memory
-    auto it = producerIndexes.begin();
-    while( it != producerIndexes.end() )
-    {
-        auto& [k, v] = *it;
-        bool removed = false;
-        if( v != nullptr )
-        {
-            if( v->isStopping() && v->isRunning() == false )
-            {
-                DBG( "thread " << v->getName() << " is no longer running.  removing associated producer from fifo" );
-                mpscFifo->removeProducer(v->getIndex());
-                it = producerIndexes.erase(it);
-                removed = true;
-            }
-        }
-        
-        if( removed == false )
-        {
-            ++it;
-        }
     }
 }
 

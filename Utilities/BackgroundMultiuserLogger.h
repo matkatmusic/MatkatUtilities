@@ -131,23 +131,18 @@ private:
     
     std::unique_ptr<TimedItemMultiProducerSingleConsumerFifoDefaultSort<juce::String>> mpscFifo;
     
-    juce::Atomic<double> lastMessageTimestamp = 0.0;
     std::unique_ptr<TimerRunner<BackgroundMultiuserLogger, 25>> messagePurger;
-    std::unique_ptr<TimerRunner<BackgroundMultiuserLogger, 1000>> threadTrackerPurger;
     
     void writeToLogInternal(const juce::String& message);
     
     void flushMessagesFromFifo();
-    
-    void purgeUnneededTrackers();
     
     juce::String createMessageWithThreadName(juce::String str, iterator producerIterator);
     void log(size_t producerIndex,
              double timestamp,
              juce::String str);
     
-    double getMessageTimestamp();
-    double updateLastTimestamp(double ts);
+    const double startTime = juce::Time::getMillisecondCounterHiRes();
     
     iterator getOrCreateProducer();
     iterator createProducerForCurrentThread(juce::Thread* thread);
