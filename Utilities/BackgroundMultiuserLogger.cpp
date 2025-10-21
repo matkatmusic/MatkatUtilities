@@ -70,6 +70,7 @@ void BackgroundMultiuserLogger::writeToLogInternal(const juce::String& message)
         return;
     
     auto timestamp = juce::Time::getMillisecondCounterHiRes() - startTime;
+    const juce::ScopedLock lock(indexesLock);
     auto producerIterator = getOrCreateProducer();
     
     jassert(producerIterator != producerIndexes.end() );
@@ -137,6 +138,7 @@ bool BackgroundMultiuserLogger::isThisAJuceThread()
 BackgroundMultiuserLogger::Map::iterator BackgroundMultiuserLogger::getEntryInMapForCurrentThread()
 {
     auto currentThreadID = juce::Thread::getCurrentThreadId();
+    const juce::ScopedLock lock(indexesLock);
     return producerIndexes.find(currentThreadID);
 }
 
@@ -144,6 +146,7 @@ BackgroundMultiuserLogger::Map::iterator BackgroundMultiuserLogger::addProducerI
                                                       size_t producerIndex,
                                                       juce::Thread *thread)
 {
+    const juce::ScopedLock lock(indexesLock);
     auto [it, result] = producerIndexes.emplace(id, std::make_unique<ProducingThreadDetails>(producerIndex, thread));
     jassert( result != false );
     juce::ignoreUnused(result);
@@ -162,13 +165,16 @@ juce::String BackgroundMultiuserLogger::createMessageWithThreadName(juce::String
     juce::String str;
     str << "[";
     
-    if( it != producerIndexes.end() && it->second != nullptr )
     {
-        str << it->second->getName();
-    }
-    else
-    {
-        str << "unknown threadName";
+        const juce::ScopedLock lock(indexesLock);
+        if( it != producerIndexes.end() && it->second != nullptr )
+        {
+            str << it->second->getName();
+        }
+        else
+        {
+            str << "unknown threadName";
+        }
     }
     
     str << "]: ";
