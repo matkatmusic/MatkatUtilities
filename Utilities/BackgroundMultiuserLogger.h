@@ -104,7 +104,9 @@ private:
     
     using iterator = Map::iterator;
     
-    std::unique_ptr<TimedItemMultiProducerSingleConsumerFifoDefaultSort<juce::String>> mpscFifo;
+    static constexpr int MessageQueueSize = 10'000;
+    using TimedMPSCFifo = TimedItemMultiProducerSingleConsumerFifoDefaultSort<juce::String, MessageQueueSize>;
+    std::unique_ptr<TimedMPSCFifo> mpscFifo;
     
     std::unique_ptr<TimerRunner<BackgroundMultiuserLogger, 25>> messagePurger;
     

@@ -13,7 +13,7 @@
 
 BackgroundMultiuserLogger::BackgroundMultiuserLogger()
 {
-    mpscFifo = std::make_unique<TimedItemMultiProducerSingleConsumerFifoDefaultSort<juce::String>>();
+    mpscFifo = std::make_unique<TimedMPSCFifo>();
     messagePurger = std::make_unique<TimerRunner<BackgroundMultiuserLogger, 25>>(*this, &BackgroundMultiuserLogger::flushMessagesFromFifo, TimerLaunchType::StartWhenSignaled);
     messagePurger->launch();
 };
