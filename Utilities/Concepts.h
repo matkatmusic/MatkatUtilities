@@ -101,10 +101,21 @@ concept HasConstIterator = requires
 {
     typename T::const_iterator;
 };
+
+template<typename T>
+concept HasMessageType = requires
+{
+    typename T::MessageType;
+};
 //============================================================================
 // Has<Member Func> concepts
 // these are concepts that check for the existence of certain member functions
 //============================================================================
+template<typename T>
+concept HasEmpty = requires( const T& t)
+{
+    { t.empty() } -> std::same_as<bool>;
+};
 
 template<typename T>
 concept HasGetID = HasIDType<T> && requires(const T& a)
@@ -170,6 +181,19 @@ template<typename T>
 concept HasConstGetData = requires (T t)
 {
     { t.getData() } -> std::same_as<const void*>;
+};
+
+template<typename T>
+concept HasPacketsMember = requires(const T& t)
+{
+    { t.packets } -> std::convertible_to< std::vector<typename T::PacketType> >;
+}
+&& HasPushBack<decltype(std::declval<T>().packets)>;
+
+template<typename T>
+concept HasHeaderMember = requires(const T& t)
+{
+    { t.header } -> std::convertible_to<typename T::HeaderType>;
 };
 
 /**
@@ -381,6 +405,12 @@ concept HasTxKeyMember = requires(T t)
 };
 
 template<typename T>
+concept HasToTxKey = requires(const T& t)
+{
+    { toTxKey(t) } -> std::convertible_to<const TxKey&>;
+};
+
+template<typename T>
 concept IsSendableItem = HasBlockMember<T> && HasTxKeyMember<T>;
 
 template<class V>
@@ -401,6 +431,15 @@ concept HasGetSendItems = requires(T t)
  */
 template<typename T>
 concept Sendable = HasGetSendItems<T>;
+
+#include <ranges>
+
+template<class T>
+concept IsNonConstIterable = std::ranges::range<T>;                          // non-const
+template<class T>
+concept IsConstIterable = std::ranges::range<const std::remove_reference_t<T>>; // const
+template<class T>
+concept IsIterable = IsNonConstIterable<T> && IsConstIterable<T>;
 
 
 template<typename T>
@@ -428,16 +467,22 @@ concept SourceType = requires(T t, DataType& d)
     HasGetNumAvailableForReading<T>;
 };
 
-template<typename T, typename DataType>
-concept SenderType = requires(T t, const DataType& d)
+template<typename T>
+concept HasGetSentItems = HasType<T> && requires(T t)
+{
+    { t.getSentItems() } -> std::same_as<std::vector<typename T::type>>;
+};
+
+template<typename T>
+concept SenderType = HasGetSentItems<T> && HasType<T> &&
+requires(T t)
 {
     /*
      a sender is defined as an object with memeber function 'addToOutgoingQueue()' and getSentItems().
         addToOutgoingQueue() takes a const reference to a DataType object and returns a bool indicating whether the item was successfully added to the outgoing queue.
         getSentItems() returns a std::vector<DataType> containing all items that have been sent.
      */
-    { t.addToOutgoingQueue(d) } -> std::same_as<bool>;
-    { t.getSentItems() } -> std::same_as<std::vector<DataType>>;
+    { t.addToOutgoingQueue(std::declval<typename T::type>()) } -> std::same_as<bool>;
     { t.getLocationOfSent() } -> std::same_as<TransmissionLocation>;
 };
 
