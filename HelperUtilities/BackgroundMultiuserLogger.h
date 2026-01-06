@@ -11,9 +11,9 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "MultiProducerSingleConsumerFifo.h"
+#include "../ThreadUtilities/MultiProducerSingleConsumerFifo.h"
 
-#include "TimerRunner.h"
+#include "../ThreadUtilities/TimerRunner.h"
 #include "LoggerWithOptionalCout.h"
 
 

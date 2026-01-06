@@ -11,9 +11,9 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include <Fifo.h>
-#include "Concepts.h"
-#include "TimerRunner.h"
+#include "../ThreadUtilities/Fifo.h"
+#include "../MiscUtilities/Concepts.h"
+#include "../ThreadUtilities/TimerRunner.h"
 
 /**
  A Multi-Producer Single-Consumer fifo.
