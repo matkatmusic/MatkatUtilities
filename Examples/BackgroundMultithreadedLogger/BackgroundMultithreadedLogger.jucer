@@ -4,32 +4,50 @@
               useAppConfig="0" addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1"
               cppLanguageStandard="20" bundleIdentifier="com.matkatmusic.BackgroundMultiuserLogger"
               companyWebsite="www.pfmcpp.com" companyCopyright="2025 MatkatMusic LLC"
-              companyName="MatkatMusic LLC" headerPath="../../../../SimpleMultiBandComp/Source/DSP/&#10;../../../../Utilities/&#10;../../../../Utilities/SystemTrayIcon/">
+              companyName="MatkatMusic LLC">
   <MAINGROUP id="LPmp8I" name="BackgroundMultiuserLogger">
     <GROUP id="{A8B60E1E-A1FF-F7C9-EB60-A60398932102}" name="Source">
-      <FILE id="apa4x7" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
-    </GROUP>
-    <GROUP id="{1CABF392-F8CD-8217-6003-0AF08D5954E0}" name="Utilities">
-      <GROUP id="{4340DB53-AA30-5D1D-3E68-367487EBA8AE}" name="SystemTrayIcon">
-        <FILE id="ptHJLU" name="SystemTrayIcon.cpp" compile="1" resource="0"
-              file="../../Utilities/SystemTrayIcon/SystemTrayIcon.cpp"/>
-        <FILE id="Q3vNJx" name="SystemTrayIcon.h" compile="0" resource="0"
-              file="../../Utilities/SystemTrayIcon/SystemTrayIcon.h"/>
-        <FILE id="QDlPCE" name="tray icon.jpg" compile="0" resource="1" file="../../Utilities/SystemTrayIcon/tray icon.jpg"/>
+      <GROUP id="{63B066EA-D09C-7BB5-0C35-AC24A8E1273E}" name="MatkatUtilities">
+        <GROUP id="{17597D45-EC9F-1681-D094-D320AA93A23A}" name="MiscUtilities">
+          <GROUP id="{F0BCE31A-939D-CB00-0506-0ECE9E6982DC}" name="SystemTrayIcon">
+            <FILE id="CyHBYI" name="SystemTrayIcon.cpp" compile="1" resource="0"
+                  file="../../MiscUtilities/SystemTrayIcon/SystemTrayIcon.cpp"/>
+            <FILE id="l3RBRY" name="SystemTrayIcon.h" compile="0" resource="0"
+                  file="../../MiscUtilities/SystemTrayIcon/SystemTrayIcon.h"/>
+            <FILE id="CPsycZ" name="tray icon.jpg" compile="0" resource="1" file="../../MiscUtilities/SystemTrayIcon/tray icon.jpg"/>
+          </GROUP>
+          <FILE id="feMCHE" name="Concepts.h" compile="0" resource="0" file="../../MiscUtilities/Concepts.h"/>
+          <FILE id="OJfjF8" name="Indenter.cpp" compile="1" resource="0" file="../../MiscUtilities/Indenter.cpp"/>
+          <FILE id="E73UNu" name="Indenter.h" compile="0" resource="0" file="../../MiscUtilities/Indenter.h"/>
+          <FILE id="cFgIrP" name="Misc.cpp" compile="1" resource="0" file="../../MiscUtilities/Misc.cpp"/>
+          <FILE id="bz6iW7" name="Misc.h" compile="0" resource="0" file="../../MiscUtilities/Misc.h"/>
+          <FILE id="L1qDsc" name="TypeName.cpp" compile="1" resource="0" file="../../MiscUtilities/TypeName.cpp"/>
+          <FILE id="aFMZoL" name="TypeName.h" compile="0" resource="0" file="../../MiscUtilities/TypeName.h"/>
+          <FILE id="vfiSmk" name="Utilities.cpp" compile="1" resource="0" file="../../MiscUtilities/Utilities.cpp"/>
+          <FILE id="bkv9jG" name="Utilities.h" compile="0" resource="0" file="../../MiscUtilities/Utilities.h"/>
+        </GROUP>
+        <GROUP id="{A94BC2E8-56BE-5958-4DB9-9B5BEC697D4F}" name="HelperUtilities">
+          <FILE id="pV93vX" name="BackgroundMultiuserLogger.cpp" compile="1"
+                resource="0" file="../../HelperUtilities/BackgroundMultiuserLogger.cpp"/>
+          <FILE id="xXE4nx" name="BackgroundMultiuserLogger.h" compile="0" resource="0"
+                file="../../HelperUtilities/BackgroundMultiuserLogger.h"/>
+          <FILE id="miLb8x" name="LoggerWithOptionalCout.cpp" compile="1" resource="0"
+                file="../../HelperUtilities/LoggerWithOptionalCout.cpp"/>
+          <FILE id="iU4m9R" name="LoggerWithOptionalCout.h" compile="0" resource="0"
+                file="../../HelperUtilities/LoggerWithOptionalCout.h"/>
+        </GROUP>
+        <GROUP id="{EBCCB0FC-67D9-8AD1-43AC-45EEE2345303}" name="ThreadUtilities">
+          <FILE id="zABPAb" name="Fifo.h" compile="0" resource="0" file="../../ThreadUtilities/Fifo.h"/>
+          <FILE id="hARUyJ" name="FifoHelpers.h" compile="0" resource="0" file="../../ThreadUtilities/FifoHelpers.h"/>
+          <FILE id="xJgKYd" name="MultiProducerSingleConsumerFifo.h" compile="0"
+                resource="0" file="../../ThreadUtilities/MultiProducerSingleConsumerFifo.h"/>
+          <FILE id="xUnQUp" name="SingleChannelSampleFifo.h" compile="0" resource="0"
+                file="../../ThreadUtilities/SingleChannelSampleFifo.h"/>
+          <FILE id="B7ur4H" name="ThreadRunner.h" compile="0" resource="0" file="../../ThreadUtilities/ThreadRunner.h"/>
+          <FILE id="zN1xwg" name="TimerRunner.h" compile="0" resource="0" file="../../ThreadUtilities/TimerRunner.h"/>
+        </GROUP>
       </GROUP>
-      <FILE id="JcIGgs" name="BackgroundMultiuserLogger.cpp" compile="1"
-            resource="0" file="../../Utilities/BackgroundMultiuserLogger.cpp"/>
-      <FILE id="luPTBI" name="BackgroundMultiuserLogger.h" compile="0" resource="0"
-            file="../../Utilities/BackgroundMultiuserLogger.h"/>
-      <FILE id="vzxA2I" name="Concepts.h" compile="0" resource="0" file="../../Utilities/Concepts.h"/>
-      <FILE id="BDyavE" name="LoggerWithOptionalCout.cpp" compile="1" resource="0"
-            file="../../Utilities/LoggerWithOptionalCout.cpp"/>
-      <FILE id="kj7skQ" name="LoggerWithOptionalCout.h" compile="0" resource="0"
-            file="../../Utilities/LoggerWithOptionalCout.h"/>
-      <FILE id="JUC2fo" name="MultiProducerSingleConsumerFifo.h" compile="0"
-            resource="0" file="../../Utilities/MultiProducerSingleConsumerFifo.h"/>
-      <FILE id="dNyJ5V" name="ThreadRunner.h" compile="0" resource="0" file="../../Utilities/ThreadRunner.h"/>
-      <FILE id="Bkr7Fj" name="TimerRunner.h" compile="0" resource="0" file="../../Utilities/TimerRunner.h"/>
+      <FILE id="apa4x7" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

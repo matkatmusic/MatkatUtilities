@@ -8,10 +8,8 @@
 
 #include <JuceHeader.h>
 
-#include <LoggerWithOptionalCout.h>
-
-#include <SystemTrayIcon.h>
-#include <BackgroundMultiuserLogger.h>
+#include "../../MiscUtilities/SystemTrayIcon/SystemTrayIcon.h"
+#include "../../HelperUtilities/BackgroundMultiuserLogger.h"
 
 struct BackgroundJob : juce::Thread
 {
