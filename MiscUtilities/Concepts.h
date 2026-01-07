@@ -453,6 +453,18 @@ concept IsSourceType =
     HasIsPrepared<T> &&
     HasIsActivelyProducing<T>;
 
+template<typename T>
+concept HasWriteToStream = requires(T t)
+{
+    { T::writeToStream(t, std::declval<juce::OutputStream&>()) } -> std::same_as<bool>;
+};
+
+template<typename T>
+concept HasReadFromStream = requires(juce::InputStream& is)
+{
+    { T::readFromStream(is) } -> std::same_as<T>;
+};
+
 
 template<typename T, typename DataType>
 concept SourceType = requires(T t, DataType& d)

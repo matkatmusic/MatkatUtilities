@@ -105,6 +105,8 @@ bool write(juce::OutputStream& os, T_&& firstArg, Args&& ... args )
         result |= detail::writeString(firstArg, os);
     else if constexpr( IsWriteBlockCompatible<T> )
         result |= detail::writeBlock(firstArg, os);
+    else if constexpr( HasWriteToStream<T> )
+        result |= T::writeToStream(firstArg, os);
     else
     {
 //        auto t_name = TYPE_NAME(T_);

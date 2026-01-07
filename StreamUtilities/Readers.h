@@ -11,6 +11,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "../MiscUtilities/Concepts.h"
 
 namespace Stream
 {
@@ -75,13 +76,17 @@ T_ read(juce::InputStream& is)
         return detail::readString(is);
     else if constexpr( std::is_same_v<T, juce::MemoryBlock> )
         return detail::readBlock(is);
+    else if constexpr( HasReadFromStream<T> )
+        return T::readFromStream(is);
     
     jassertfalse; //unimplemented handler for type!!!
-    return {};
+    return T{};
 }
 
-//void read(juce::InputStream& is);
-
+/*
+ recursively iterates through `args`, reading multiple values from the input stream, writing the results to the `first` reference arg during each recursion.
+ be warned that this function doesn't signal if the inner `read<T>` calls fail!
+ */
 template<typename T_, typename ... Args>
 void read(juce::InputStream& is, T_& first, Args& ... args)
 {
