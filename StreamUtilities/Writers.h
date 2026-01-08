@@ -38,6 +38,7 @@ bool writeFloat32 (float value, juce::OutputStream& output);
 
 bool writeString (const juce::String& value, juce::OutputStream& output);
 
+bool writeUuid(const juce::Uuid& uuid, juce::OutputStream& output);
 
 template<typename Container>
 bool writeContainer(const Container& container, juce::OutputStream& output)
@@ -140,6 +141,8 @@ bool write(juce::OutputStream& os, T_&& firstArg, Args&& ... args )
         result |= detail::writeString(firstArg, os);
     else if constexpr( IsWriteBlockCompatible<T> )
         result |= detail::writeBlock(firstArg, os);
+    else if constexpr( std::is_same_v<T, juce::Uuid> )
+        result |= detail::writeUuid(firstArg, os);
     else if constexpr( HasWriteToStream<T> )
         result |= T::writeToStream(firstArg, os);
     else if constexpr( IsContainerType<T> )

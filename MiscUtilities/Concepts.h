@@ -454,9 +454,9 @@ concept IsSourceType =
     HasIsActivelyProducing<T>;
 
 template<typename T>
-concept HasTypeIdentifier = requires
+concept HasGetTypeUuid = requires(T t)
 {
-    { T::GetTypeIdentifier() } -> std::convertible_to<juce::var>;
+    { T::GetTypeUuid() } -> std::convertible_to<juce::Uuid>;
 };
 
 template<typename T>
@@ -468,7 +468,7 @@ concept HasWriteToStream = requires(T t)
 template<typename T>
 concept HasReadFromStream = requires(juce::InputStream& is)
 {
-    { T::readFromStream(is) } -> std::same_as<T>;
+    { T::readFromStream(is) } -> std::same_as<typename T::Ptr>;
 };
 
 template<typename T>
@@ -480,12 +480,12 @@ concept HasGetAsJSON = requires(T t)
 template<typename T>
 concept HasCreateFromJSON = requires(juce::var v)
 {
-    { T::createFromJSON(v) } -> std::same_as<T>;
+    { T::createFromJSON(v) } -> std::same_as<typename T::Ptr>;
 };
 
 template<typename T>
 concept IsSerializableType =
-    HasTypeIdentifier<T> &&
+    HasGetTypeUuid<T> &&
     HasWriteToStream<T> &&
     HasReadFromStream<T> &&
     HasGetAsJSON<T> &&

@@ -109,6 +109,18 @@ juce::MemoryBlock readBlock(juce::InputStream& input)
     return blob;
 }
 
+juce::Uuid readUuid(juce::InputStream& input)
+{
+    auto block = readBlock(input);
+    juce::Uuid temp;
+    jassert( block.getSize() >= temp.size() );
+    
+    temp = static_cast<const juce::uint8*>(block.getData());
+    
+    return temp;
+}
+
+
 void readPaddingZeros (size_t bytesRead, juce::InputStream& input)
 {
     size_t numZeros = ~(bytesRead - 1) & 0x03;

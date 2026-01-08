@@ -38,6 +38,8 @@ juce::String readString(juce::InputStream& input);
 
 juce::MemoryBlock readBlock(juce::InputStream& input);
 
+juce::Uuid readUuid(juce::InputStream& input);
+
 void readPaddingZeros (size_t bytesRead, juce::InputStream& input);
 
 bool checkBytesAvailable (juce::int64 requiredBytes, const char* message, juce::InputStream& input);
@@ -97,6 +99,8 @@ T_ read(juce::InputStream& is)
         return detail::readBlock(is);
     else if constexpr( HasReadFromStream<T> )
         return T::readFromStream(is);
+    else if constexpr( std::is_same_v<T, juce::Uuid> )
+        return detail::readUuid(is);
     else if constexpr( IsContainerType<T> )
         return detail::readContainer<T>(is);
     

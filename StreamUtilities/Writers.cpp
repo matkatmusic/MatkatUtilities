@@ -59,6 +59,12 @@ bool writeString (const juce::String& value, juce::OutputStream& output)
     return output.writeRepeatedByte ('\0', numPaddingZeros);
 }
 
+bool writeUuid(const juce::Uuid& uuid, juce::OutputStream& output)
+{
+    juce::MemoryBlock mb { uuid.getRawData(), uuid.size() };
+    return writeBlock(mb, output);
+}
+
 } //end namespace detail
 
 bool write(juce::OutputStream& os) { return false; }
