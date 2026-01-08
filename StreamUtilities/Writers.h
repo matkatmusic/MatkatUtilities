@@ -38,6 +38,41 @@ bool writeFloat32 (float value, juce::OutputStream& output);
 
 bool writeString (const juce::String& value, juce::OutputStream& output);
 
+
+template<typename Container>
+bool writeContainer(const Container& container, juce::OutputStream& output)
+{
+    INDENT
+    if( container.empty() )
+        return false;
+    
+    DBG( Indenter() << "writing container size to output" );
+
+    auto size = container.size();
+    output.writeInt64BigEndian(size);
+    
+    //write element size
+    DBG( Indenter() << "writing element size to output" );
+
+    auto elementSize = sizeof( typename Container::value_type );
+    output.writeInt64BigEndian( elementSize );
+
+    //write bytes
+    auto numBytes = size * elementSize;
+    if( output.write( (const juce::uint8*)container.data(), numBytes ) == false )
+    {
+        return false;
+    }
+    
+    const size_t numPaddingZeros = ~(numBytes - 1) & 3;
+    if( numPaddingZeros > 0 )
+    {
+        return output.writeRepeatedByte (0, numPaddingZeros);
+    }
+    
+    return true;
+}
+
 template<typename T>
 requires ( IsWriteBlockCompatible<T> )
 bool writeBlock (const T& blob, juce::OutputStream& output)
@@ -107,6 +142,8 @@ bool write(juce::OutputStream& os, T_&& firstArg, Args&& ... args )
         result |= detail::writeBlock(firstArg, os);
     else if constexpr( HasWriteToStream<T> )
         result |= T::writeToStream(firstArg, os);
+    else if constexpr( IsContainerType<T> )
+        result |= detail::writeContainer(firstArg, os);
     else
     {
 //        auto t_name = TYPE_NAME(T_);

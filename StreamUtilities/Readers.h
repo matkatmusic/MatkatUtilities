@@ -41,6 +41,25 @@ juce::MemoryBlock readBlock(juce::InputStream& input);
 void readPaddingZeros (size_t bytesRead, juce::InputStream& input);
 
 bool checkBytesAvailable (juce::int64 requiredBytes, const char* message, juce::InputStream& input);
+
+template<typename Container>
+Container readContainer(juce::InputStream& input)
+{
+    auto size = input.readInt64BigEndian();
+    auto elementSize = input.readInt64BigEndian();
+    auto numBytes = size * elementSize;
+    if( checkBytesAvailable(numBytes, "stream ended before container was completed!", input) == false )
+    {
+        return Container{};
+    }
+
+    Container container;
+    container.resize(size);
+    jassert( numBytes < std::numeric_limits<juce::int64>::max() );
+    auto numRead = input.read(static_cast<void*>(container.data()), static_cast<std::size_t>(numBytes));
+    readPaddingZeros(numRead, input);
+    return container;
+}
 } //end namespace detail
 
 template<typename T_>
@@ -78,6 +97,8 @@ T_ read(juce::InputStream& is)
         return detail::readBlock(is);
     else if constexpr( HasReadFromStream<T> )
         return T::readFromStream(is);
+    else if constexpr( IsContainerType<T> )
+        return detail::readContainer<T>(is);
     
     jassertfalse; //unimplemented handler for type!!!
     return T{};

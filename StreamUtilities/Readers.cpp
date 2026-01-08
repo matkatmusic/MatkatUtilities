@@ -82,11 +82,17 @@ juce::String readString(juce::InputStream& input)
 juce::MemoryBlock readBlock(juce::InputStream& input)
 {
     INDENT
-    checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading blob", input);
+    if( checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading blob", input) == false )
+    {
+        return {};
+    }
     
     DBG( Indenter() << "reading size from input" );
     auto blobDataSize = input.readIntBigEndian();
-    checkBytesAvailable ((blobDataSize + 3) % 4, "Stream::Reader input stream exhausted before reaching end of blob", input);
+    if( checkBytesAvailable ((blobDataSize + 3) % 4, "Stream::Reader input stream exhausted before reaching end of blob", input) == false )
+    {
+        return {};
+    }
     
     juce::MemoryBlock blob;
     
