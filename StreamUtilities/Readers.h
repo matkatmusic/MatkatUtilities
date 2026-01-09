@@ -103,8 +103,15 @@ T_ read(juce::InputStream& is)
         return detail::readUuid(is);
     else if constexpr( IsContainerType<T> )
         return detail::readContainer<T>(is);
-    
-    jassertfalse; //unimplemented handler for type!!!
+    else
+    {
+        auto t_name = TYPE_NAME( std::declval<T_>() );
+        DBG( "Stream::Readers::read( T_ ): Unimplemented handling for type!!!");
+        DBG( "T_ = " << juce::String(t_name.data(), t_name.size()));
+        auto tname = TYPE_NAME(  std::declval<T>() );
+        DBG( "T = " << juce::String(tname.data(), tname.size()));
+        jassertfalse; //unimplemented handling for T!!!
+    }
     return T{};
 }
 

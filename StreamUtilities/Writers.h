@@ -149,10 +149,11 @@ bool write(juce::OutputStream& os, T_&& firstArg, Args&& ... args )
         result |= detail::writeContainer(firstArg, os);
     else
     {
-//        auto t_name = TYPE_NAME(T_);
-//        DBG( "T_ = " << juce::String(t_name.data(), t_name.size()));
-//        auto tname = TYPE_NAME(T);
-//        DBG( "T = " << juce::String(tname.data(), tname.size()));
+        auto t_name = TYPE_NAME(T_);
+        DBG( "Stream::Writers::write( T_ ): Unimplemented handling for type!!!");
+        DBG( "T_ = " << juce::String(t_name.data(), t_name.size()));
+        auto tname = TYPE_NAME(T);
+        DBG( "T = " << juce::String(tname.data(), tname.size()));
         jassertfalse; //unimplemented handling for T!!!
     }
 
