@@ -319,7 +319,7 @@ void StreamReaderWriterTests::runTest()
             juce::MemoryInputStream input(mb, false);
             // exercise reader path that calls T::readFromStream
             decltype(t)::Ptr readObj = new TestSerializable();
-            expect( Stream::Readers::read(input, readObj) );
+            expect( Stream::Readers::read(input, *readObj) );
             expect(readObj->v == t.v);
         }
     }
