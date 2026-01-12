@@ -20,48 +20,72 @@ namespace detail
 /*
  all of these are modifications of the OscInputStream code
  */
-
-juce::int32 readInt32(juce::InputStream& input)
+/*
+ TODO: All of these functions should return bool (or std::optional?) and take the desired type as a reference param:
+ example:
+ bool readInt32(juce::inputStream& input, juce::int32& val)
+ {
+    if( checkBytesAvailable(4, "message") == false )
+        return false;
+    val = input.readIntBigEndian();
+    return true;
+ }
+ */
+bool readInt32(juce::InputStream& input, juce::int32& val)
 {
-    checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading int32", input);
-    return input.readIntBigEndian();
+    if( checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading int32", input) == false )
+        return false;
+    val = input.readIntBigEndian();
+    return true;
 }
 
-juce::int8 readInt8(juce::InputStream& input)
+bool readInt8(juce::InputStream& input, juce::int8& v)
 {
-    checkBytesAvailable(1, "Stream::Reader input stream exhausted while reading int8", input);
-    return (juce::int8)input.readByte();
+    if( checkBytesAvailable(1, "Stream::Reader input stream exhausted while reading int8", input) == false )
+        return false;
+    v = static_cast<juce::int8>(input.readByte());
+    return true;
 }
 
-juce::uint8 readUint8(juce::InputStream& input)
+bool readUint8(juce::InputStream& input, juce::uint8& v)
 {
-    return static_cast<juce::uint8>(readInt8(input));
+    if( checkBytesAvailable(1, "Stream::Reader input stream exhausted while reading uint8", input) == false )
+        return false;
+    v = static_cast<juce::uint8>(input.readByte());
+    return true;
 }
 
-juce::uint16 readUint16(juce::InputStream& input)
+bool readUint16(juce::InputStream& input, juce::uint16& v)
 {
-    checkBytesAvailable(2, "Stream::Reader input stream exhausted while reading uint16", input);
-    return static_cast<juce::uint16>(input.readShortBigEndian());
+    if( checkBytesAvailable(2, "Stream::Reader input stream exhausted while reading uint16", input) == false )
+        return false;
+    v = static_cast<juce::uint16>(input.readShortBigEndian());
+    return true;
 }
 
-juce::uint64 readUint64(juce::InputStream& input)
+bool readUint64(juce::InputStream& input, juce::uint64& v)
 {
-    checkBytesAvailable (8, "Stream::Reader input stream exhausted while reading uint64", input);
-    return (juce::uint64) input.readInt64BigEndian();
+    if( checkBytesAvailable (8, "Stream::Reader input stream exhausted while reading uint64", input) == false )
+        return false;
+    v = static_cast<juce::uint64>(input.readInt64BigEndian());
+    return true;
 }
 
-float readFloat32(juce::InputStream& input)
+bool readFloat32(juce::InputStream& input, float& f)
 {
-    checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading float", input);
-    return input.readFloatBigEndian();
+    if( checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading float", input) == false )
+        return false;
+    f = input.readFloatBigEndian();
+    return true;
 }
 
-juce::String readString(juce::InputStream& input)
+bool readString(juce::InputStream& input, juce::String& str)
 {
-    checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading string", input);
+    if( checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading string", input) == false )
+        return false;
     
     auto posBegin = (size_t) input.getPosition();
-    auto s = input.readString();
+    str = input.readString();
     auto posEnd = (size_t) input.getPosition();
     
     input.setPosition(posEnd - 1);
@@ -70,32 +94,30 @@ juce::String readString(juce::InputStream& input)
     {
         juce::Logger::writeToLog ("Stream::Reader input stream exhausted before finding null terminator of string");
         jassertfalse;
-        return {};
+        return false;
     }
     
     size_t bytesRead = posEnd - posBegin;
-    readPaddingZeros (bytesRead, input);
+    if( readPaddingZeros (bytesRead, input) == false )
+        return false;
     
-    return s;
+    return true;
 }
 
-juce::MemoryBlock readBlock(juce::InputStream& input)
+bool readBlock(juce::InputStream& input, juce::MemoryBlock& blob)
 {
     INDENT
     if( checkBytesAvailable (4, "Stream::Reader input stream exhausted while reading blob", input) == false )
     {
-        return {};
+        return false;
     }
     
     DBG( Indenter() << "reading size from input" );
     auto blobDataSize = input.readIntBigEndian();
     if( checkBytesAvailable ((blobDataSize + 3) % 4, "Stream::Reader input stream exhausted before reaching end of blob", input) == false )
     {
-        return {};
+        return false;
     }
-    
-    juce::MemoryBlock blob;
-    
     
     DBG( Indenter() << "reading block from input" );
     auto bytesRead =
@@ -104,26 +126,38 @@ juce::MemoryBlock readBlock(juce::InputStream& input)
 #elif JUCE_MAC
     input.readIntoMemoryBlock(blob, (ssize_t) blobDataSize);
 #endif
-    readPaddingZeros (bytesRead, input);
     
-    return blob;
+    if( blobDataSize != bytesRead )
+    {
+        jassertfalse;
+        return false;
+    }
+    
+    if( readPaddingZeros (bytesRead, input) == false )
+        return false;
+    
+    return true;
 }
 
-juce::Uuid readUuid(juce::InputStream& input)
+bool readUuid(juce::InputStream& input, juce::Uuid& uuid)
 {
-    auto block = readBlock(input);
-    juce::Uuid temp;
-    jassert( block.getSize() >= temp.size() );
+    juce::MemoryBlock block;
+    if( readBlock(input, block) == false )
+        return false;
     
-    temp = static_cast<const juce::uint8*>(block.getData());
+    jassert( block.getSize() >= uuid.size() );
     
-    return temp;
+    uuid = static_cast<const juce::uint8*>(block.getData());
+    
+    return true;
 }
 
-
-void readPaddingZeros (size_t bytesRead, juce::InputStream& input)
+bool readPaddingZeros (size_t bytesRead, juce::InputStream& input)
 {
     size_t numZeros = ~(bytesRead - 1) & 0x03;
+    
+    if( numZeros == 0 )
+        return true;
     
     if( numZeros > 0 )
     {
@@ -137,11 +171,13 @@ void readPaddingZeros (size_t bytesRead, juce::InputStream& input)
         {
             juce::Logger::writeToLog ("Stream::Reader input stream format error: missing padding zeros");
             jassertfalse;
-            break;
+            return false;
         }
         
         --numZeros;
     }
+    
+    return true;
 }
 
 bool checkBytesAvailable (juce::int64 requiredBytes, const char* message, juce::InputStream& input)

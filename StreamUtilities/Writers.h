@@ -117,7 +117,9 @@ bool write(juce::OutputStream& os, T_&& firstArg, Args&& ... args )
     if constexpr( std::is_enum_v<T> )
     {
         using U = std::underlying_type_t<T>;
-        result |= write(os, static_cast<U>(firstArg));
+//        result |= write(os, static_cast<U>(firstArg));
+        U u = static_cast<U>(firstArg);
+        result |= write(os, u);
     }
     else if constexpr (std::is_integral_v<T> )
     {

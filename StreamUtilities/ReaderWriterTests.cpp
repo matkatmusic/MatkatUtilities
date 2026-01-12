@@ -32,7 +32,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             std::remove_cv<decltype(testVal)>::type val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val) );
             expect(val == testVal);
         }
     }
@@ -47,7 +47,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             std::remove_cv<decltype(testVal)>::type val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val) );
             jassert(val == testVal);
         }
     }
@@ -62,7 +62,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             std::remove_cv<decltype(testVal)>::type val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val ));
             jassert(val == testVal);
         }
     }
@@ -77,7 +77,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             std::remove_cv<decltype(testVal)>::type val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val));
             jassert(val == testVal);
         }
     }
@@ -92,7 +92,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             std::remove_cv<decltype(testVal)>::type val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val ));
             jassert(val == testVal);
         }
     }
@@ -108,7 +108,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             std::remove_cv<decltype(testBlock)>::type val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val ));
             jassert(val == testBlock);
         }
     }
@@ -135,17 +135,29 @@ void StreamReaderWriterTests::runTest()
         }
         {
             juce::MemoryInputStream input(mb, false);
-            auto val1 = Stream::Readers::read<std::remove_cv_t<decltype(testVal1)>>(input);
+//            auto val1 = Stream::Readers::read<std::remove_cv_t<decltype(testVal1)>>(input);
+            std::remove_cv_t<decltype(testVal1)> val1;
+            expect( Stream::Readers::read(input, val1) );
             jassert(val1 == testVal1);
-            auto val2 = Stream::Readers::read<std::remove_cv_t<decltype(testVal2)>>(input);
+//            auto val2 = Stream::Readers::read<std::remove_cv_t<decltype(testVal2)>>(input);
+            std::remove_cv_t<decltype(testVal2)> val2;
+            expect( Stream::Readers::read(input, val2) );
             jassert(val2 == testVal2);
-            auto val3 = Stream::Readers::read<std::remove_cv_t<decltype(testVal3)>>(input);
+//            auto val3 = Stream::Readers::read<std::remove_cv_t<decltype(testVal3)>>(input);
+            std::remove_cv_t<decltype(testVal3)> val3;
+            expect( Stream::Readers::read(input, val3) );
             jassert(val3 == testVal3);
-            auto val4 = Stream::Readers::read<std::remove_cv_t<decltype(testVal4)>>(input);
+//            auto val4 = Stream::Readers::read<std::remove_cv_t<decltype(testVal4)>>(input);
+            std::remove_cv_t<decltype(testVal4)> val4;
+            expect( Stream::Readers::read(input, val4) );
             jassert(val4 == testVal4);
-            auto val5 = Stream::Readers::read<std::remove_cv_t<decltype(testVal5)>>(input);
+//            auto val5 = Stream::Readers::read<std::remove_cv_t<decltype(testVal5)>>(input);
+            std::remove_cv_t<decltype(testVal5)> val5;
+            expect( Stream::Readers::read(input, val5) );
             jassert(val5 == testVal5);
-            auto val6 = Stream::Readers::read<std::remove_cv_t<decltype(testVal6)>>(input);
+//            auto val6 = Stream::Readers::read<std::remove_cv_t<decltype(testVal6)>>(input);
+            std::remove_cv_t<decltype(testVal6)> val6;
+            expect( Stream::Readers::read(input, val6) );
             jassert(val6 == testVal6);
         }
 
@@ -163,17 +175,29 @@ void StreamReaderWriterTests::runTest()
 
         {
             juce::MemoryInputStream input(mb, false);
-            auto val5 = Stream::Readers::read<std::remove_cv_t<decltype(testVal5)>>(input);
+//            auto val5 = Stream::Readers::read<std::remove_cv_t<decltype(testVal5)>>(input);
+            std::remove_cv_t<decltype(testVal5)> val5;
+            expect( Stream::Readers::read(input, val5) );
             jassert(val5 == testVal5);
-            auto val4 = Stream::Readers::read<std::remove_cv_t<decltype(testVal4)>>(input);
+//            auto val4 = Stream::Readers::read<std::remove_cv_t<decltype(testVal4)>>(input);
+            std::remove_cv_t<decltype(testVal4)> val4;
+            expect( Stream::Readers::read(input, val4) );
             jassert(val4 == testVal4);
-            auto val1 = Stream::Readers::read<std::remove_cv_t<decltype(testVal1)>>(input);
+//            auto val1 = Stream::Readers::read<std::remove_cv_t<decltype(testVal1)>>(input);
+            std::remove_cv_t<decltype(testVal1)> val1;
+            expect( Stream::Readers::read(input, val1) );
             jassert(val1 == testVal1);
-            auto val3 = Stream::Readers::read<std::remove_cv_t<decltype(testVal3)>>(input);
+//            auto val3 = Stream::Readers::read<std::remove_cv_t<decltype(testVal3)>>(input);
+            std::remove_cv_t<decltype(testVal3)> val3;
+            expect( Stream::Readers::read(input, val3) );
             jassert(val3 == testVal3);
-            auto val6 = Stream::Readers::read<std::remove_cv_t<decltype(testVal6)>>(input);
+//            auto val6 = Stream::Readers::read<std::remove_cv_t<decltype(testVal6)>>(input);
+            std::remove_cv_t<decltype(testVal6)> val6;
+            expect( Stream::Readers::read(input, val6) );
             jassert(val6 == testVal6);
-            auto val2 = Stream::Readers::read<std::remove_cv_t<decltype(testVal2)>>(input);
+//            auto val2 = Stream::Readers::read<std::remove_cv_t<decltype(testVal2)>>(input);
+            std::remove_cv_t<decltype(testVal2)> val2;
+            expect( Stream::Readers::read(input, val2) );
             jassert(val2 == testVal2);
         }
     }
@@ -191,7 +215,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             std::remove_cv<decltype(u8)>::type val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val) );
             expect(val == u8);
         }
 
@@ -205,7 +229,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             std::remove_cv<decltype(u16)>::type val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val) );
             expect(val == u16);
         }
     }
@@ -222,7 +246,7 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             LocalEnum val;
-            Stream::Readers::read(input, val);
+            expect( Stream::Readers::read(input, val) );
             expect(static_cast<juce::int32>(val) == static_cast<juce::int32>(e));
         }
     }
@@ -237,7 +261,8 @@ void StreamReaderWriterTests::runTest()
         }
         {
             juce::MemoryInputStream input(mb, false);
-            auto val = Stream::Readers::read<juce::Uuid>(input);
+            decltype(testUuid) val;
+            expect( Stream::Readers::read(input, val) );
             expect(val == testUuid);
         }
     }
@@ -253,16 +278,17 @@ void StreamReaderWriterTests::runTest()
         }
         {
             juce::MemoryInputStream input(mb, false);
-            auto readVec = Stream::Readers::read<decltype(vec)>(input);
-            expect(readVec == vec);
+            decltype(vec) val;
+            expect( Stream::Readers::read(input, val) );
+            expect(val == vec);
         }
     }
 
     beginTest("HasWriteToStream/HasReadFromStream Custom Type Test");
     {
-        struct TestSerializable
+        struct TestSerializable : juce::ReferenceCountedObject
         {
-            using Ptr = TestSerializable; // concept expects T::Ptr type
+            using Ptr = juce::ReferenceCountedObjectPtr<TestSerializable>; // concept expects T::Ptr type
             int v = 0;
 
             static bool writeToStream(const TestSerializable& t, juce::OutputStream& os)
@@ -272,14 +298,18 @@ void StreamReaderWriterTests::runTest()
 
             static Ptr readFromStream(juce::InputStream& is)
             {
-                Ptr p;
-                Stream::Readers::read(is, p.v);
+                Ptr p = new TestSerializable();
+                if( Stream::Readers::read(is, p->v) == false )
+                    return {};
+                
                 return p;
             }
         };
 
         juce::MemoryBlock mb;
-        TestSerializable t{ 12345 };
+        TestSerializable t; //{ 12345 };
+        t.v = 12345;
+        
         {
             auto output = juce::MemoryOutputStream(mb, false);
             // exercise writer path that calls T::writeToStream
@@ -288,8 +318,9 @@ void StreamReaderWriterTests::runTest()
         {
             juce::MemoryInputStream input(mb, false);
             // exercise reader path that calls T::readFromStream
-            auto readObj = Stream::Readers::read<TestSerializable>(input);
-            expect(readObj.v == t.v);
+            decltype(t)::Ptr readObj = new TestSerializable();
+            expect( Stream::Readers::read(input, readObj) );
+            expect(readObj->v == t.v);
         }
     }
 
@@ -305,9 +336,9 @@ void StreamReaderWriterTests::runTest()
         juce::Uuid uuid;
         std::vector<juce::int32> vec { 1, 2, 3 };
 
-        struct S
+        struct S : juce::ReferenceCountedObject
         {
-            using Ptr = S;
+            using Ptr = juce::ReferenceCountedObjectPtr<S>;
             juce::int32 v = 77;
             static bool writeToStream(const S& s, juce::OutputStream& os)
             {
@@ -316,12 +347,15 @@ void StreamReaderWriterTests::runTest()
             
             static Ptr readFromStream(juce::InputStream& is)
             {
-                Ptr p;
-                Stream::Readers::read(is, p.v);
+                Ptr p = new S();
+                if( Stream::Readers::read(is, p->v) == false )
+                    return {};
+                
                 return p;
             }
         };
-        S s{ 79 };
+        S s;
+        s.v = 79;
 
         // write primitives and serializable S via the variadic writer
         {
@@ -331,12 +365,18 @@ void StreamReaderWriterTests::runTest()
 
         {
             juce::MemoryInputStream input(mb, false);
-            auto re = Stream::Readers::read<decltype(e)>(input);
-            auto ru8 = Stream::Readers::read<decltype(u8)>(input);
-            auto ru16 = Stream::Readers::read<decltype(u16)>(input);
-            auto ruuid = Stream::Readers::read<decltype(uuid)>(input);
-            auto rs = Stream::Readers::read<decltype(s)>(input);
-            auto rvec = Stream::Readers::read<decltype(vec)>(input);
+            decltype(e) re;
+            expect( Stream::Readers::read(input, re) );
+            decltype(u8) ru8;
+            expect( Stream::Readers::read(input, ru8) );
+            decltype(u16) ru16;
+            expect( Stream::Readers::read(input, ru16) );
+            decltype(uuid) ruuid;
+            expect( Stream::Readers::read(input, ruuid) );
+            decltype(s) rs;
+            expect( Stream::Readers::read(input, rs) );
+            decltype(vec) rvec;
+            expect( Stream::Readers::read(input, rvec) );
 
             expect(re == e);
             expect(ru8 == u8);
